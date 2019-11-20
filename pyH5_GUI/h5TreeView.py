@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTreeView, QTreeWidget, QVBoxLayout, QTreeWidgetItem
+from PyQt5.QtWidgets import (QPushButton, QHBoxLayout, QApplication, QWidget, QTreeView, QTreeWidget, QVBoxLayout, QTreeWidgetItem,QFileDialog)
 from PyQt5.QtGui import QStandardItemModel,QStandardItem
 from PyQt5.QtCore import Qt, pyqtSlot,QSize
 import h5py
@@ -7,26 +7,39 @@ from py4xs.hdf import lsh5
 
 class tree(QWidget):
 	(FILE,FILE_PATH,H5GROUP) = range(3)
-	def __init__(self,h5file=None):
+	def __init__(self):
 		super().__init__()
 		self.title = 'Tree of h5 data'
 		self.left = 10
 		self.top = 10
 		self.width = 720
 		self.height = 640
-		self.f = h5py.File(h5file,'r')
-		self.filename = self.f.filename.split('/')[-1]
-		self.UI()
-	
-	def UI(self):
+		
 		self.setWindowTitle(self.title)
 		self.setGeometry(self.left,self.top,self.width,self.height)
 		
-		datalayout= QVBoxLayout()
+		self.datalayout= QVBoxLayout()
+		self.open_button = self.add_open_button()
+		self.datalayout.addWidget(self.open_button)
+		self.setLayout(self.datalayout)
+		self.show()
 		self.tree = QTreeWidget()
 		header = QTreeWidgetItem(['File','Type','H5 Keys'])
 		self.tree.setHeaderItem(header)
-		datalayout.addWidget(self.tree)
+		self.datalayout.addWidget(self.tree)
+	
+	def add_open_button(self):
+		open_file_btn = QPushButton('Open')
+		open_file_btn.clicked.connect(self.add_file)
+		#button_section =  QHBoxLayout()
+		#button_section.addWidget(open_file_btn)
+		return open_file_btn#button_section
+		
+	def add_file(self):	
+		h5file = QFileDialog.getOpenFileName(self, 'Open file',
+		'/home/yugang/Desktop/XPCS_GUI/TestData/test.h5', filter='*.hdf5 *.h5 *.lst')[0]
+		self.f = h5py.File(h5file,'r')
+		self.filename = self.f.filename.split('/')[-1]
 		
 		#self.model = QStandardItemModel(0,3)
 		#self.model.setHeaderData(0,Qt.Horizontal,"File")
@@ -36,6 +49,8 @@ class tree(QWidget):
 		
 		self.tree_root = QTreeWidgetItem(self.tree,[self.filename,'H5 File',''])
 		self.tree.setColumnWidth(0,250)
+		self.tree.setColumnWidth(1,100)
+		self.tree.setColumnWidth(2,100)
 		print(
 			  self.tree.columnWidth(0),
 			  self.tree.columnWidth(1),
@@ -45,7 +60,7 @@ class tree(QWidget):
 		self.tree.itemClicked.connect(self.onItemClicked)
 		
 		#print(self.tree.currentItem())
-		self.setLayout(datalayout)
+		self.setLayout(self.datalayout)
 		self.show()
 
 	def add_branch(self,tree_root,h5file):
@@ -73,5 +88,5 @@ class tree(QWidget):
 		
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
-	Tree = tree(h5file='/Users/jiliangliu/Downloads/U_minn_batch5.h5')
+	Tree = tree()
 	sys.exit(app.exec_())

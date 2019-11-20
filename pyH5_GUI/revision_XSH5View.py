@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from PyQt5.QtWidgets import (QWidget, QToolTip,
+from PyQt5.QtWidgets import (QWidget, QToolTip,QComboBox,
 	QPushButton, QApplication, QMessageBox, QDesktopWidget,QMainWindow,
 QAction, qApp, QMenu, QGridLayout, QTreeWidget,  QTreeWidgetItem, QTableWidget,
  QLabel,  QTableWidgetItem,   QInputDialog, QLineEdit,	QHBoxLayout,	QCheckBox,
@@ -21,6 +21,9 @@ from ColorMap import (cmap_cyclic_spectrum, cmap_jet_extended, cmap_vge, cmap_vg
 					  cmap_albula, cmap_albula_r,cmap_hdr_goldish , color_map_dict )
 pg.setConfigOptions( imageAxisOrder = 'row-major')
 import pandas as pds
+from py4xs.hdf import h5exp,h5xs,lsh5
+from py4xs.data2d import Data2d,Axes2dPlot,DataType
+
 #pg.setConfigOption('background', 'w')
 #pg.setConfigOption('foreground', 'k')
 class mainWindow(QMainWindow):
@@ -31,7 +34,7 @@ class mainWindow(QMainWindow):
 		#self.file_items_dict = {}#
 		#self.file_items = []#
 		self.text = ''
-		self.values = np.array([])
+		self.value = np.array([])
 		self.current_dataset = ''
 		self.X = None
 		self.guiplot_count=0
@@ -54,6 +57,7 @@ class mainWindow(QMainWindow):
 		Initialises the main window. '''
 		grid = QGridLayout()
 		grid.setSpacing(10)
+		#self.file_item_list is a tree object for hierarchical hdf5 data
 		self.file_items_list = nt.tree()
 		self.file_items_list.tree.itemClicked.connect(self.item_clicked)
 		#self.file_items_list.tree.itemDoubleClicked.connect(self.item_double_clicked)
@@ -66,6 +70,7 @@ class mainWindow(QMainWindow):
 		# Initialise all buttons
 		self.pop_plot_box = self.add_pop_plot_box()
 		self.open_button = self.add_open_button()
+		self.dataset_type_box = self.add_dataset_type_box()
 		self.plot_curve_button = self.add_plot_curve_button()
 		self.plot_img_button = self.add_plot_img_button()
 		self.plot_surface_button = self.add_plot_surface_button()
@@ -87,15 +92,17 @@ class mainWindow(QMainWindow):
 		self.imageCrossHair=QLabel()
 		self.imageCrossHair.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		# Add the created layouts and widgets to the window
-		grid.addLayout(self.open_button,		1, 0, 1, 1,  QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_curve_button,	 1, 1, 1, 1,QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_img_button,	 1, 2, 1, 1,QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_surface_button, 1, 3, 1, 1,QtCore.Qt.AlignLeft)
-		grid.addLayout(self.clr_plot_button,	 1, 4, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.open_button,		 1, 0, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.dataset_type_box,    1, 0, 1, 1, QtCore.Qt.AlignRight)
+		#grid.addLayout(self.dexp_data,           2, 0, 1, 1, QtCore.Qt.AlignRight)
+		grid.addLayout(self.plot_curve_button,	 1, 1, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.plot_img_button,	 2, 1, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.plot_surface_button, 1, 5, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.clr_plot_button,	 1, 6, 1, 1, QtCore.Qt.AlignLeft)
 		#grid.addLayout(self.pop_plot_box,		  1, 5, 1, 1, QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_g2_button,		 2, 1, 1, 1,QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_c12_button,	 2, 2, 1, 1,QtCore.Qt.AlignLeft)
-		grid.addLayout(self.plot_qiq_button,	 2, 3, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.plot_g2_button,		 1, 4, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.plot_c12_button,	 2, 4, 1, 1, QtCore.Qt.AlignLeft)
+		grid.addLayout(self.plot_qiq_button,	 2, 5, 1, 1, QtCore.Qt.AlignLeft)
 		grid.addLayout(self.q_box_input,		 2, 6, 1, 1, QtCore.Qt.AlignLeft)
 		#grid.addLayout(self.plot_img_button, 1, 3, 1, 1,QtCore.Qt.AlignLeft)
 		grid.addLayout(self.setX_button, 1, 8, 1, 1,QtCore.Qt.AlignLeft)
@@ -132,6 +139,14 @@ class mainWindow(QMainWindow):
 		button_section.addWidget(open_file_btn)
 		#button_section.addStretch(0)
 		return button_section
+	def add_dataset_type_box(self):
+		self.dataset_type_obj = QComboBox()
+		self.dataset_type_obj.addItems(['LiX','CHX'])
+		#self.dataset_type_obj.currentIndexChanged.connect(self.what_dataset_type)
+		box_section = QHBoxLayout()
+		box_section.addWidget(self.dataset_type_obj)
+		return box_section 
+	
 	def add_plot_g2_button(self):
 		return self.add_generic_plot_button( plot_type = 'g2',	button_name='Plot_g2')
 	def add_plot_curve_button(self):
@@ -195,7 +210,6 @@ class mainWindow(QMainWindow):
 			title = uid  + self.current_dataset
 		except:
 			title = self.filename_text	+ '-' + self.current_dataset
-		#print( title, self.value.shape )
 		image_min, image_max = np.min( self.value.T ), np.max( self.value.T )
 		self.min,self.max=image_min, image_max
 		pos=[ 0, 0	]
@@ -232,7 +246,8 @@ class mainWindow(QMainWindow):
 			pointer=self.guiplot.getView().vb.mapSceneToView(pos)
 			x,y=pointer.x(),pointer.y()
 			if (x>self.xmin) and (x<self.xmax) and (y>self.ymin) and (y<self.ymax):
-				I =  self.value.T[ int((x-self.xmin)*self.hor_Npt/(self.xmax-self.xmin)),int((y-self.ymin)*self.ver_Npt/(self.ymax-self.ymin)) ]
+				I =  self.value.T[ int((x-self.xmin)*self.hor_Npt/(self.xmax-self.xmin)),
+								   int((y-self.ymin)*self.ver_Npt/(self.ymax-self.ymin)) ]
 				self.imageCrossHair.setText("X=%0.4f,Y=%0.4f,I=%.5e"%(x,y,I) )
 			else:
 				self.imageCrossHair.setText(  'X=%0.4f, Y=%0.4f, I=%.5e'%(x,y,0))
@@ -241,14 +256,22 @@ class mainWindow(QMainWindow):
 	def plot_generic_image( self, plot_type ):
 		self.configure_plot_type( plot_type  )
 		shape = (self.value.T).shape
-		self.hor_Npt= shape[0]
-		self.ver_Npt= shape[1]
-		self.xmin,self.xmax,self.ymin,self.ymax=0,shape[0],0,shape[1]
+		self.dataset_type = self.dataset_type_obj.currentText()
+		#print(self.dataset_type)
+		#dataset_type = 'LiX'
+		if self.dataset_type == 'LiX':
+			self.hor_Npt = shape[-2]
+			self.ver_Npt = shape[-1]
+			self.xmin,self.xmax,self.ymin,self.ymax=0,shape[-1],0,shape[-2]
+		else:
+			self.hor_Npt= shape[0]
+			self.ver_Npt= shape[1]
+			self.xmin,self.xmax,self.ymin,self.ymax=0,shape[0],0,shape[1]
 		try:
 			self.guiplot.getView().vb.scene().sigMouseMoved.connect(self.image_mouseMoved )
 		except:
 			pass
-		if plot_type == 'c12':
+		if plot_type == 'c12' and self.dataset_type == 'CHX':
 			his, bc =  np.histogram( self.value, 1000 )
 			pmax = np.argmax(his)
 			low, high = bc[pmax-10], bc[pmax+10]
@@ -287,7 +310,7 @@ class mainWindow(QMainWindow):
 				title = uid  + self.current_dataset
 			except:
 				title = self.filename_text	+ '-' + self.current_dataset
-			print( title, self.value.shape )
+			####print( title, self.value.shape )
 			nan_mask = ~np.isnan( self.value )
 			
 			image_min, image_max = np.min( self.value[nan_mask] ), np.max( self.value[nan_mask] )
@@ -321,8 +344,11 @@ class mainWindow(QMainWindow):
 		self.image_plot_count += 1
 
 	def get_dict_from_qval_dict( self ):
-		l = list( self.selected_hdf5_file['qval_dict'].attrs.items() )
-		dc = { int(i[0]):i[1] for i in l }
+		if self.item_path.split('/')[-1] == 'qval_dict':
+			l = list( self.selected_hdf5_file.attrs.items() )
+			dc = { int(i[0]):i[1] for i in l }
+		else:
+			pass
 		return dc
 	def plot_generic_curve(self, plot_type):
 		self.configure_plot_type( plot_type )
@@ -468,13 +494,14 @@ class mainWindow(QMainWindow):
 	def guiplot_clear(self):
 		if not self.pop_plot:
 			if self.plot_type in ['curve', 'g2', 'qiq']:
+				print(self.legend.items)
+				#try:
+				for item in self.legend.items:
+					self.legend.removeItem(item)
+				#except:
+				#	pass
 				self.guiplot.clear()
 				self.guiplot_count=0
-				try:
-					for item in self.legend.items:
-						self.legend.removeItem(item)
-				except:
-					pass
 			elif self.plot_type in [ 'image']:
 				self.guiplot.clear()
 				self.guiplot_count=0
@@ -659,11 +686,9 @@ class mainWindow(QMainWindow):
 
 	def display_dataset(self):
 		self.get_filename_selected()
+		text = self.item.text(2)
 		if self.path != '':
 			hdf5_file  = self.selected_hdf5_file
-			#print(hdf5_file,type(hdf5_file))
-			#print('display data here')
-			#print( text, self.current_dataset )
 			if isinstance(hdf5_file, h5py.Dataset):
 				self.group_data = False
 				self.current_dataset = self.item_path.split('/')[-1]				
@@ -679,36 +704,32 @@ class mainWindow(QMainWindow):
 					numrows = shape[0]
 					numcols = shape[1]	
 					self.value =  hdf5_file[:]
-				elif Ns==3:  #a 3D array, [x,y,z], show [x,y ]
-					numrows = shape[0]
-					numcols = shape[1]
-					try:
-						self.value =  hdf5_file[:,:,self.qth]
-					except:
-						print('The max q-th is %s.'%shape[2])
-						self.value =  hdf5_file[text][:,:,0]
-				else:
-					numrows = shape[0]
-					numcols = shape[1]
-					self.value =  hdf5_file[:]
-
+				elif Ns>=3:  #a 3D array, [x,y,z], show [x,y ]
+					dataset_type = 'LiX'
+					if dataset_type == 'CHX':
+						numrows = shape[0]
+						numcols = shape[1]
+						try:
+							self.value =  hdf5_file[:,:,self.qth]
+						except:
+							print('The max q-th is %s.'%shape[2])
+							self.value =  hdf5_file[text][:,:,0]
+					else:
+						numrows = shape[-2]
+						numcols = shape[-1]
+						try:
+							self.value =  hdf5_file[self.qth,:,:]
+						except:
+							print('The max q-th is %s.'%shape[0])
 						
 			elif   isinstance(hdf5_file, h5py.Group):
 				self.current_dataset = self.item_path.split('/')[-1]
 				print('display the group data here')
-				#print( text )
-				#print( self.pds_keys )
 				if text in self.pds_keys:
-					#print( 'YYES' )
 					print( self.filename, text)					   
 					d = pds.read_hdf( self.filename, key= text )#[:]
-					#print( 
-					#print( d )
-					#print( pds.__version__ )
 					self.value =  np.array( d )
 					shape = self.value.shape
-					#print('the shape is:' )
-					#print( self.value.shape )
 					numrows = shape[0]
 					numcols = shape[1]
 					Ns = len(shape)
@@ -717,7 +738,7 @@ class mainWindow(QMainWindow):
 					
 				else:
 					self.dataset_table.clear()
-					self.values = np.array([])
+					self.value = np.array([])
 					self.plot_btn.hide()
 			else:
 				print( 'Other format!')
@@ -766,18 +787,15 @@ class mainWindow(QMainWindow):
 			num_attributes = len(attributes)
 			self.attribute_table.setRowCount(num_attributes)
 			self.attribute_table.setColumnCount(0)
-			#print( text, rtext, hdf5_file,  attributes )
 			if num_attributes > 0:
 				self.attribute_table.setColumnCount(2)
 				self.attributes_flag=True
 			else:
 				self.attributes_flag=False
-			#print(   num_attributes   )	   
 			# Populate the table
 			for i in range(num_attributes):
 				value = attributes[i][1]
 				self.attribute_table.setItem(i, 0, QTableWidgetItem(attributes[i][0]))
-				#print( i, value)
 				if isinstance(value, np.ndarray):
 					N = len(value)
 					self.attribute_table.setColumnCount(N+1)
@@ -786,8 +804,6 @@ class mainWindow(QMainWindow):
 						self.attribute_table.setItem(i, j, QTableWidgetItem(str(v)))
 						#self.attribute_table.setItem(i, 1, QTableWidgetItem(str(value[0].decode())))
 						j+=1
-					#elif isinstance(value, str)  or   isinstance(value, float) or isinstance(value, int):
-					#print('here is a array')
 				else:
 					self.attribute_table.setItem(i, 1, QTableWidgetItem(str(value)))
 					#print( i, value )

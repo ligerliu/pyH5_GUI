@@ -23,8 +23,12 @@ class tree(QWidget):
 		header = QTreeWidgetItem(['File'])
 		self.tree.setHeaderItem(header)
 		self.datalayout.addWidget(self.tree)
-	
+
+	def clear(self):
+		self.tree.clear()
+			
 	def add_file(self,h5file):	
+
 		self.h5_file_path = h5file
 		self.f = h5py.File(h5file,'r')
 		self.filename = self.f.filename.split('/')[-1]
