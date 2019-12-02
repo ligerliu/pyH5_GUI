@@ -198,22 +198,36 @@ class PlotWidget(   ):
         except:
             pass
         
-        if len(self.mainWin.value) > 0:                    
-            if self.mainWin.X is not None:# and len(self.mainWin.X)==self.mainWin.max_row-self.mainWin.min_row:
-                X = self.mainWin.X[self.mainWin.min_row:self.mainWin.max_row] 
+        if len(self.mainWin.value) > 0: 
+            print(self.mainWin.col_vec,self.mainWin.X)
+            if self.mainWin.col_vec:
+                indx_min,indx_max = self.mainWin.min_row,self.mainWin.max_row
+                indx_min_1,indx_max_1 = self.mainWin.min_col,self.mainWin.max_col
             else:
-                X = self.mainWin.value[self.mainWin.min_row:self.mainWin.max_row, 0]
+                indx_min,indx_max = self.mainWin.min_col,self.mainWin.max_col
+                indx_min_1,indx_max_1 = self.mainWin.min_row,self.mainWin.max_row
+            if self.mainWin.X is not None:# and len(self.mainWin.X)==self.mainWin.max_row-self.mainWin.min_row:
+                if self.mainWin.col_vec:
+                    X = self.mainWin.X[self.mainWin.min_row:self.mainWin.max_row] 
+                else:
+                    X = self.mainWin.X[self.mainWin.min_col:self.mainWin.max_col] 
+            else:
+                X = np.arange(indx_min,indx_max)
+                #self.mainWin.value[self.mainWin.min_row:self.mainWin.max_row, 0]
                 #print(   X[0], X[-1]    )
-            if   self.mainWin.max_col - self.mainWin.min_col   > 1: # for 2d data each plot col by col
+            if   indx_max_1 - indx_min_1   > 1: # for 2d data each plot col by col
                 j = 0
                 #print( 'here for debug plot ...')    
                 #print(   X[0], X[-1]    )
-                for i in range(self.mainWin.min_col, self.mainWin.max_col):
-                    Y = self.mainWin.value[self.mainWin.min_row:self.mainWin.max_row, i ]
+                for i in range(indx_min,indx_max+1):
+                    if self.mainWin.col_vec:
+                        Y = self.mainWin.value[self.mainWin.min_row:self.mainWin.max_row, i ]
+                    else:
+                        Y = self.mainWin.value[i, self.mainWin.min_col:self.mainWin.max_col ]
                     try:
                         leg = self.legends[   i  ]
                     except:
-                        leg = self.legends[ i - self.mainWin.min_col ]
+                        leg = self.legends[ i - indx_min_1 ]
                     if isinstance(leg, list):
                         leg = leg[:]
                     self.mainWin.guiplot.plot( X, Y,
@@ -224,14 +238,18 @@ class PlotWidget(   ):
                     j += 1
                     self.mainWin.guiplot_count += 1
             else: # for 1d data we plot a row
+                
                 if Ns > 1:
-                    Y = self.mainWin.value[ self.mainWin.min_row:self.mainWin.max_row, self.mainWin.min_col ]
+                    if self.mainWin.col_vec:
+                        Y = self.mainWin.value[ self.mainWin.min_row:self.mainWin.max_row, self.mainWin.min_col ]
+                    else:
+                        Y = self.mainWin.value[ self.mainWin.min_row, self.mainWin.min_col:self.mainWin.max_col ]
                 else:
-                    Y = self.mainWin.value[ self.mainWin.min_row:self.mainWin.max_row  ]
+                    Y = self.mainWin.value[ indx_min:indx_max+1 ]
                 try:
-                    leg = self.legends[ self.mainWin.min_col  ]
+                    leg = self.legends[ indx_min_1 ]
                 except:
-                    leg = self.legends[ self.mainWin.min_col - self.mainWin.min_col]
+                    leg = self.legends[ indx_max_1 - indx_min_1]
                 if isinstance(leg, list):
                     leg = leg[:]
                 print(X.shape, Y.shape, leg )

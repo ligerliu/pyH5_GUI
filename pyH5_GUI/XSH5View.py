@@ -19,7 +19,7 @@ import pyqtgraph.opengl as gl
 
 pg.setConfigOptions( imageAxisOrder = 'row-major')
 import pandas as pds
-import logger
+#import logger
 #pg.setConfigOption('background', 'w')
 #pg.setConfigOption('foreground', 'k')
 import logging
@@ -106,6 +106,8 @@ class mainWindow(QMainWindow):
         self.resetX_button = self.add_resetX_button()
         self.setlogX_box = self.add_setlogX_box()
         self.setlogY_box = self.add_setlogY_box()
+        self.q_box_input = self.add_q_box()
+        
         #self.clr_plot_checkbox = self.add_clr_plot_box()
         self.clr_plot_button = self.add_clr_plot_button()
         self.resizeEvent = self.onresize
@@ -124,6 +126,7 @@ class mainWindow(QMainWindow):
         grid.addLayout(self.clr_plot_button,     1, 4, 1, 1, QtCore.Qt.AlignLeft)  
         grid.addLayout(self.setX_button, 1, 8, 1, 1,QtCore.Qt.AlignLeft)
         grid.addLayout(self.resetX_button, 2, 8, 1, 1,QtCore.Qt.AlignLeft)  
+        self.grid.addLayout(self.q_box_input,         2, 6, 1, 1, QtCore.Qt.AlignLeft)
         
         grid.addLayout(self.setlogX_box, 1, 7, 1, 1,QtCore.Qt.AlignLeft)
         grid.addLayout(self.setlogY_box, 2, 7, 1, 1,QtCore.Qt.AlignLeft)  
@@ -196,13 +199,13 @@ class mainWindow(QMainWindow):
             self.grid.addLayout(self.plot_g2_button,      2, 1, 1, 1,QtCore.Qt.AlignLeft)
             self.grid.addLayout(self.plot_c12_button,     2, 2, 1, 1,QtCore.Qt.AlignLeft)
             self.grid.addLayout(self.plot_qiq_button,     2, 3, 1, 1, QtCore.Qt.AlignLeft)
-            self.grid.addLayout(self.q_box_input,         2, 6, 1, 1, QtCore.Qt.AlignLeft)            
+            #self.grid.addLayout(self.q_box_input,         2, 6, 1, 1, QtCore.Qt.AlignLeft)            
     def delete_dataset_buttons( self, dataset_type):
         if dataset_type == 'CHX'  and self.current_dataset_type =='CHX':
             self.deleteLayout( self.plot_g2_button )             
             self.deleteLayout( self.plot_c12_button )
             self.deleteLayout(  self.plot_qiq_button )
-            self.deleteLayout(  self.q_box_input  )         
+            #self.deleteLayout(  self.q_box_input  )         
     def deleteLayout(self, layout):
         for i in range(layout.count()):
             layout.itemAt(i).widget().close()
@@ -233,7 +236,7 @@ class mainWindow(QMainWindow):
         box_section.addWidget(self.dataset_type_obj)        
         return box_section     
     
-    def  dataset_type_selection_change( self, i  ):
+    def dataset_type_selection_change( self, i  ):
         self.dataset_type_obj_string = self.dataset_type_obj.currentText()
         self.initialise_layout()
         self.current_dataset_type = self.dataset_type_obj.currentText()
@@ -328,6 +331,9 @@ class mainWindow(QMainWindow):
         return button_section
 
     def guiplot_clear(self):
+        #there is aproblem for plot clear, 1. legend cant clear for curve, 2. after curve plot image doesnt show up,
+        #3. surface plot can not be centered.
+        
         if self.plot_type in ['curve', 'g2', 'qiq']:
             self.guiplot.clear()
             self.guiplot_count=0
@@ -347,12 +353,15 @@ class mainWindow(QMainWindow):
                 self.guiplot.removeItem( t )
         except:
             pass
+        
     def add_q_box( self ):
         # Create textbox
         self.q_box = QLineEdit(   placeholderText="Please enter q-number (int) of two-time function."  )
+        self.q_box.textEdited.connect(self.item_clicked)
         button_section =  QHBoxLayout()
         button_section.addWidget(self.q_box )
         return button_section
+    
     def make_menu_bar(self):
         '''
         Initialises the menu bar at the top. '''
@@ -462,6 +471,7 @@ class mainWindow(QMainWindow):
         selected_items = self.dataset_table.table.selectedItems()
         shape = np.shape(self.value)
         Ns = len(shape)
+        self.col_vec = True
         if len(selected_items) > 0:
             min_row = selected_items[0].row()
             max_row = selected_items[-1].row() + 1
@@ -477,6 +487,9 @@ class mainWindow(QMainWindow):
             max_row = shape[0]
             min_col = 0
             self.selected_flag = False
+         
+        if max_row-min_row < max_col-min_col:
+            self.col_vec = False
         self.min_row, self.max_row, self.min_col, self.max_col=min_row, max_row, min_col, max_col
 
     def setX(self ):
@@ -516,6 +529,7 @@ class mainWindow(QMainWindow):
                 #self.current_dataset = self.item_path.split('/')[-1]				
                 shape = hdf5_file.shape
                 Ns = len(shape)
+                print(shape)
                 if Ns==0:
                     try:
                         self.value =  bstring_to_string(  hdf5_file   )#[0]
@@ -545,6 +559,7 @@ class mainWindow(QMainWindow):
                         numcols = shape[-1]
                         try:
                             self.value =  hdf5_file[self.qth,:,:]
+                            print('The max q-th is %s.'%shape[0],self.qth)
                         except:
                             print('The max q-th is %s.'%shape[0])
 
@@ -575,7 +590,8 @@ class mainWindow(QMainWindow):
                         show_data_flag = False
                     try:
                         if self.value.shape[0]>100 and self.value.shape[1]>100:
-                            show_data_flag=False
+                            pass
+                            #show_data_flag=False
                     except:
                             pass   
                 if show_data_flag:                    
