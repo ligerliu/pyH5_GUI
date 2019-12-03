@@ -141,7 +141,7 @@ class PlotWidget(   ):
                     self.legends =    legend_heads
                     self.uid = self.mainWin.current_base_filename        
     
-    def  configure_plot_type(self, plot_type ):
+    def configure_plot_type(self, plot_type ):
         self.mainWin.plot_type = plot_type
         if plot_type in plot_curve_type :
             if self.mainWin.guiplot_count==0:
@@ -219,7 +219,7 @@ class PlotWidget(   ):
                 j = 0
                 #print( 'here for debug plot ...')    
                 #print(   X[0], X[-1]    )
-                for i in range(indx_min,indx_max+1):
+                for i in range(indx_min_1,indx_max_1):
                     if self.mainWin.col_vec:
                         Y = self.mainWin.value[self.mainWin.min_row:self.mainWin.max_row, i ]
                     else:
@@ -325,9 +325,9 @@ class PlotWidget(   ):
                 title = uid  + self.mainWin.current_item_name
             except:
                 pass         
-        image_min, image_max = np.min( self.mainWin.value.T ), np.max( self.mainWin.value.T )
+        image_min, image_max = np.nanmin( self.mainWin.value.T ), np.nanmax( self.mainWin.value.T )
         self.mainWin.min,self.mainWin.max=image_min, image_max
-        pos=[ 0, 0  ]
+        pos = [ 0, 0  ]
         if self.mainWin.colorscale_string == 'log':
             if image_min<=0:#np.any(self.mainWin.imageData<=0):
                 image_min = 0.1*np.mean(np.abs( self.mainWin.value.T ))
@@ -349,7 +349,7 @@ class PlotWidget(   ):
         try:
             sx,sy = self.mainWin.value.T.shape
             cx,cy = sx//2, sy//2
-            p.translate(-cx,-cy,0)
+            p.translate(-cx*2,-cy*2,0)
         except:
             pass
         self.mainWin.guiplot.addItem( p )

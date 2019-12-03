@@ -199,16 +199,19 @@ class mainWindow(QMainWindow):
             self.grid.addLayout(self.plot_g2_button,      2, 1, 1, 1,QtCore.Qt.AlignLeft)
             self.grid.addLayout(self.plot_c12_button,     2, 2, 1, 1,QtCore.Qt.AlignLeft)
             self.grid.addLayout(self.plot_qiq_button,     2, 3, 1, 1, QtCore.Qt.AlignLeft)
-            #self.grid.addLayout(self.q_box_input,         2, 6, 1, 1, QtCore.Qt.AlignLeft)            
+            #self.grid.addLayout(self.q_box_input,         2, 6, 1, 1, QtCore.Qt.AlignLeft)     
+            
     def delete_dataset_buttons( self, dataset_type):
         if dataset_type == 'CHX'  and self.current_dataset_type =='CHX':
             self.deleteLayout( self.plot_g2_button )             
             self.deleteLayout( self.plot_c12_button )
             self.deleteLayout(  self.plot_qiq_button )
-            #self.deleteLayout(  self.q_box_input  )         
+            #self.deleteLayout(  self.q_box_input  )        
+            
     def deleteLayout(self, layout):
         for i in range(layout.count()):
             layout.itemAt(i).widget().close()
+            
     ########End Deal with layout  
     def onresize(self, event):
         print('Here for resize')
@@ -218,6 +221,7 @@ class mainWindow(QMainWindow):
         self.attribute_table.table.setMaximumWidth(0.3*self.width())
         self.guiplot.setMinimumHeight( 0.6*self.height() )
         #self.guiplot.setMinimumHeight( 0.6*self.height() )
+        
     def add_open_button(self):
         '''
         Initialises the buttons in the button bar at the top of the main window. '''
@@ -227,6 +231,7 @@ class mainWindow(QMainWindow):
         button_section.addWidget(open_file_btn)
         #button_section.addStretch(0)
         return button_section      
+    
     def add_dataset_type_box(self):
         self.dataset_type_obj = QComboBox()
         self.dataset_type_obj.addItems( self.dataset_type_list )
@@ -245,19 +250,21 @@ class mainWindow(QMainWindow):
         
     def add_plot_g2_button(self):
         return self.add_generic_plot_button( plot_type = 'g2',  button_name='Plot_g2')
-    def add_plot_c12_button(self):
-        return self.add_generic_plot_button( plot_type = 'C12',  button_name='Plot_TwoTime')
     
+    def add_plot_c12_button(self):
+        return self.add_generic_plot_button( plot_type = 'C12',  button_name='Plot_TwoTime')  
     
     def add_plot_curve_button(self):
         return self.add_generic_plot_button( plot_type = 'curve',  button_name='Plot_Curve')
+    
     def add_plot_qiq_button(self):
         return self.add_generic_plot_button( plot_type = 'qiq',  button_name='Plot_qiq')    
+    
     def add_plot_img_button(self):
         return self.add_generic_plot_button( plot_type = 'image',  button_name='Plot_Image')
+    
     def add_plot_surface_button(self):
-        return self.add_generic_plot_button( plot_type = 'surface',  button_name='Plot_Surface')
-        
+        return self.add_generic_plot_button( plot_type = 'surface',  button_name='Plot_Surface')        
 
     def add_generic_plot_button(self, plot_type, button_name):
         plot_btn =  QPushButton( button_name)        
@@ -279,6 +286,7 @@ class mainWindow(QMainWindow):
         button_section =  QHBoxLayout()
         button_section.addWidget(self.setlogX_box_obj )
         return button_section
+    
     def click_setlogX_box (self, state):
         if state == QtCore.Qt.Checked:
             self.logX_plot = True 
@@ -287,13 +295,15 @@ class mainWindow(QMainWindow):
         try:
             self.guiplot.setLogMode( x=self.logX_plot,  y=self.logY_plot) 
         except:
-            pass               
+            pass        
+        
     def add_setlogY_box(self):
         self.setlogY_box_obj =   QCheckBox("logY" )
         self.setlogY_box_obj.stateChanged.connect( self.click_setlogY_box )
         button_section =  QHBoxLayout()
         button_section.addWidget(self.setlogY_box_obj )
         return button_section
+    
     def click_setlogY_box (self, state):
         if state == QtCore.Qt.Checked:
             self.logY_plot = True  
@@ -302,8 +312,7 @@ class mainWindow(QMainWindow):
         try:
             self.guiplot.setLogMode( x=self.logX_plot,  y=self.logY_plot) 
         except:
-            pass   
-            
+            pass              
             
     def get_dict_from_qval_dict( self ):
         l = list( self.current_hdf5['qval_dict'].attrs.items() )
@@ -317,12 +326,14 @@ class mainWindow(QMainWindow):
         button_section =  QHBoxLayout()
         button_section.addWidget(self.setX_btn)
         return button_section
+    
     def add_resetX_button(self):
         self.resetX_btn =  QPushButton('ReSetX')
         self.resetX_btn.clicked.connect(self.resetX)
         button_section =  QHBoxLayout()
         button_section.addWidget(self.resetX_btn)
         return button_section
+    
     def add_clr_plot_button(self):
         self.clr_plot_button =   QPushButton("clear plot" )
         self.clr_plot_button.clicked.connect(self.guiplot_clear)
@@ -337,11 +348,11 @@ class mainWindow(QMainWindow):
         if self.plot_type in ['curve', 'g2', 'qiq']:
             self.guiplot.clear()
             self.guiplot_count=0
-            try:
-                for item in self.legend.items:
-                    self.legend.removeItem(item)
-            except:
-                pass
+            #try:
+            for item in self.legend.items:
+                self.legend.removeItem(item)
+            #except:
+            #    pass
         elif self.plot_type in [ 'image']:
             self.guiplot.clear()
             self.guiplot_count=0
@@ -357,7 +368,7 @@ class mainWindow(QMainWindow):
     def add_q_box( self ):
         # Create textbox
         self.q_box = QLineEdit(   placeholderText="Please enter q-number (int) of two-time function."  )
-        self.q_box.textEdited.connect(self.item_clicked)
+        self.q_box.returnPressed.connect(self.item_clicked)
         button_section =  QHBoxLayout()
         button_section.addWidget(self.q_box )
         return button_section
@@ -414,18 +425,20 @@ class mainWindow(QMainWindow):
     def onTriggered_show_image_data(self, action):
         #print(action.text())
         self.show_image_data = action #.text()
+        
     def onTriggered_colormap(self, action):
         #print(action.text())
         self.colormap_string = action.text()
+        
     def onTriggered_colorscale(self, action):
         #print(action.text())
         self.colorscale_string = action.text()
+        
     def show_about_menu(self):
         '''
         Shows the about menu by initialising an about_window object. This class is described in _window_classes.py '''
         self.about_window = ht.aboutWindow()        
         self.about_window.show()
-        
         
     def choose_file(self):
         '''
@@ -472,21 +485,21 @@ class mainWindow(QMainWindow):
         shape = np.shape(self.value)
         Ns = len(shape)
         self.col_vec = True
-        if len(selected_items) > 0:
+        if len(selected_items) >= 0:
             min_row = selected_items[0].row()
             max_row = selected_items[-1].row() + 1
             min_col = selected_items[0].column()
             max_col = selected_items[-1].column() + 1
             self.selected_flag = True
-        else:
-            if len(shape) == 1:
-                max_col = 1
-            else:
-                max_col = shape[1]
-            min_row = 0
-            max_row = shape[0]
-            min_col = 0
-            self.selected_flag = False
+        #else:
+        #    if len(shape) == 1:
+        #        max_col = 1
+        #    else:
+        #        max_col = shape[1]
+        #    min_row = 0
+        #    max_row = shape[0]
+        #    min_col = 0
+        #    self.selected_flag = False
          
         if max_row-min_row < max_col-min_col:
             self.col_vec = False
@@ -559,9 +572,9 @@ class mainWindow(QMainWindow):
                         numcols = shape[-1]
                         try:
                             self.value =  hdf5_file[self.qth,:,:]
-                            print('The max q-th is %s.'%shape[0],self.qth)
+                            print('current figure is %s.'%self.qth)
                         except:
-                            print('The max q-th is %s.'%shape[0])
+                            print('The max figure num is %s.'%shape[0])
 
             elif   isinstance(hdf5_file, h5py.Group):
                 print('display the group data here')
@@ -651,7 +664,9 @@ class mainWindow(QMainWindow):
 
     def item_double_clicked(self):
         '''
-        Responds to a double click on an item in the file_items_list.'''
+        Responds to a double click on an item in the file_items_list.
+        Feel like not really useful
+        '''
          
         #self.display_attributes()
         try:
